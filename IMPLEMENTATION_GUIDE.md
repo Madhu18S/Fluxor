@@ -564,34 +564,6 @@ asyncio.run(main())
 
 ---
 
-## 🎓 INTERVIEW EXPLANATION
-
-### "Walk me through your arbitrage system"
-
-**Response:**
-
-"Fluxor is a high-fidelity cryptocurrency arbitrage engine with three main components:
-
-**1. Detection Layer**
-- Real-time price aggregation from 3 venues: Binance, Kraken, Uniswap v3
-- Continuous scanning for two types of opportunities:
-  - Cross-exchange: Same asset, different price (e.g., BTC $50k on Binance vs $50.01k on Kraken)
-  - Triangular: Mispriced conversion path (e.g., BTC→ETH→USD produces profit)
-
-**2. Execution Layer**
-- Q-Learning agent decides HOW to execute:
-  - Aggressive (immediate, high slippage)
-  - Patient (limit order, wait for fill)
-  - Wait (avoid poor conditions)
-- Smart Order Router uses learned policy to select optimal venue
-
-**3. Backtesting Layer**
-- Historical simulation with REALISTIC frictions:
-  - Network latency (Gamma-distributed, mean 50ms, occasional spikes)
-  - Market impact (square-root model: cost = 0.5×√size)
-  - Exchange fees (maker 2bps, taker 5bps)
-- Result: Backtests match live performance
-
 **Why unique:**
 Most bots fail in production because backtests ignore frictions. I model all three explicitly:
 - Latency means your order price is stale by 1-2 bps
