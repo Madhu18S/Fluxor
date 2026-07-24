@@ -1,0 +1,171 @@
+diff --git a/app/api/backtest/route.ts b/app/api/backtest/route.ts
+index b53ed30..8ae3414 100644
+--- a/app/api/backtest/route.ts
++++ b/app/api/backtest/route.ts
+@@ -1,5 +1,5 @@
+ import { type NextRequest, NextResponse } from 'next/server'
+-import { defaultConfig } from '@/lib/backtest/config'
++import { defaultConfig, feesForTier, type CoinbaseTier } from '@/lib/backtest/config'
+ import { loadPair } from '@/lib/backtest/data'
+ import { runBacktest } from '@/lib/backtest/engine'
+ import { computeMetrics, latencySensitivity } from '@/lib/backtest/metrics'
+@@ -7,12 +7,16 @@ import { computeMetrics, latencySensitivity } from '@/lib/backtest/metrics'
+ // Allow up to 5 minutes for a full 3-month fetch + backtest
+ export const maxDuration = 300
+ 
++const VALID_TIERS: CoinbaseTier[] = ['under_10k', '10k_to_50k', '50k_to_100k', '100k_to_1m']
++
+ export async function GET(req: NextRequest) {
+   const sp = req.nextUrl.searchParams
+   const months = Math.min(6, Math.max(1, parseInt(sp.get('months') ?? '3', 10)))
+   const symbol = sp.get('symbol') ?? 'BTC-USD'
++  const tierParam = sp.get('coinbaseTier') as CoinbaseTier | null
++  const coinbaseTier: CoinbaseTier = tierParam && VALID_TIERS.includes(tierParam) ? tierParam : 'under_10k'
+ 
+-  const config = defaultConfig({ months })
++  const config = defaultConfig({ months, fees: feesForTier(coinbaseTier) })
+ 
+   try {
+     const bars = await loadPair(symbol, months)
+@@ -28,18 +32,27 @@ export async function GET(req: NextRequest) {
+     const metrics = computeMetrics(result)
+     const latencyPoints = latencySensitivity(bars, config)
+ 
+-    // Resume bullet
++    // Resume bullet — only claim a Sharpe/phantom-alpha win if the strategy
++    // actually cleared friction. Publishing a positive-sounding bullet for a
++    // net-negative strategy is exactly the kind of thing that falls apart
++    // under a "walk me through the numbers" follow-up.
+     const fast = latencyPoints.reduce((a, b) => (a.latency_ms < b.latency_ms ? a : b))
+     const slow = latencyPoints.reduce((a, b) => (a.latency_ms > b.latency_ms ? a : b))
+-    const resumeBullet =
+-      `Backtested across ${months} months of Binance.US/Coinbase historical 1-minute data, ` +
+-      `achieving a ${metrics.sharpe.toFixed(1)} Sharpe ratio and ` +
+-      `${metrics.strategy_uptime_pct.toFixed(0)}% strategy uptime after accounting ` +
+-      `for simulated latency and slippage, reducing phantom alpha by ` +
+-      `${metrics.phantom_alpha_pct.toFixed(0)}% versus a naive backtest ` +
+-      `(Sharpe collapses from ${fast.sharpe.toFixed(1)} at ${fast.latency_ms.toFixed(0)}ms to ` +
+-      `${slow.sharpe.toFixed(1)} at ${slow.latency_ms.toFixed(0)}ms, demonstrating the ` +
+-      `microstructure model's sensitivity to execution speed).`
++
++    const resumeBullet = metrics.strategy_profitable_after_friction
++      ? `Backtested across ${months} months of Binance.US/Coinbase historical 1-minute data, ` +
++        `achieving a ${metrics.sharpe.toFixed(1)} Sharpe ratio and ` +
++        `${metrics.strategy_uptime_pct.toFixed(0)}% data uptime after accounting ` +
++        `for simulated latency and slippage, with friction eliminating ` +
++        `${metrics.phantom_alpha_pct.toFixed(0)}% of the naive (zero-friction) spread ` +
++        `(Sharpe moves from ${fast.sharpe.toFixed(1)} at ${fast.latency_ms.toFixed(0)}ms to ` +
++        `${slow.sharpe.toFixed(1)} at ${slow.latency_ms.toFixed(0)}ms, demonstrating the ` +
++        `microstructure model's sensitivity to execution speed).`
++      : `Backtested a cross-exchange Binance.US/Coinbase mean-reversion strategy across ${months} ` +
++        `months of 1-minute data with a full microstructural friction layer (Gamma-distributed latency, ` +
++        `real fee tiers, order-book slippage); found the naive ${metrics.avg_gross_spread_bps.toFixed(1)}bps ` +
++        `average edge is fully consumed by friction (net ${metrics.avg_net_spread_bps.toFixed(1)}bps), ` +
++        `correctly identifying the strategy as unviable at retail fee tiers rather than reporting phantom alpha.`
+ 
+     return NextResponse.json({
+       metrics,
+@@ -49,6 +62,7 @@ export async function GET(req: NextRequest) {
+       n_bars: result.n_bars,
+       months,
+       symbol,
++      coinbaseTier,
+       resumeBullet,
+       window: {
+         start: bars[0].ts,
+diff --git a/lib/backtest/config.ts b/lib/backtest/config.ts
+index 4cba36f..8921a54 100644
+--- a/lib/backtest/config.ts
++++ b/lib/backtest/config.ts
+@@ -35,13 +35,41 @@ export interface BacktestConfig {
+ 
+ export const MINUTES_PER_YEAR = 60 * 24 * 365
+ 
++// ─── Real-world fee schedules (approximate, as of mid-2026 — CHECK CURRENT
++// RATES BEFORE PUBLISHING ANY NUMBER, exchanges revise these regularly) ───
++//
++// Coinbase Advanced Trade taker fee is volume-tiered on trailing 30-day USD
++// volume. Most retail accounts sit in the bottom tier and pay the full rate.
++// Binance.US taker is comparatively flat for retail-sized accounts.
++export const COINBASE_TAKER_FEE_BPS_BY_TIER = {
++  under_10k: 60,      // Tier 1 — most retail accounts land here
++  '10k_to_50k': 40,   // Tier 2
++  '50k_to_100k': 25,  // Tier 3
++  '100k_to_1m': 20,   // Tier 4
++} as const
++export type CoinbaseTier = keyof typeof COINBASE_TAKER_FEE_BPS_BY_TIER
++
++export const BINANCEUS_TAKER_FEE_BPS = 10 // ~0.10% flat retail taker rate
++
++export function feesForTier(coinbaseTier: CoinbaseTier = 'under_10k'): FeeModel {
++  return {
++    binanceus: BINANCEUS_TAKER_FEE_BPS / 1e4,
++    coinbase: COINBASE_TAKER_FEE_BPS_BY_TIER[coinbaseTier] / 1e4,
++  }
++}
++
+ export function defaultConfig(overrides?: Partial<BacktestConfig>): BacktestConfig {
+   return {
+     months: 3,
+     starting_capital: 100_000,
+-    fees: { binanceus: 0.00010, coinbase: 0.00010 },
++    // Defaults to the fee tier almost every individual trader is actually
++    // in (<$10k/mo volume) — override with feesForTier(...) if you trade
++    // enough volume to genuinely qualify for a lower Coinbase tier.
++    fees: feesForTier('under_10k'),
+     latency: { round_trip_ms: 10, decay_ms: 50 },
+-    slippage: { per_leg: 0.00005 },
++    // BTC/USD top-of-book spread on liquid venues typically runs ~1-5bps;
++    // 3bps/leg is a reasonable, still-conservative default (was 0.5bp).
++    slippage: { per_leg: 0.0003 },
+     strategy: {
+       basis_window_min: 120,
+       entry_threshold_bps: 15,
+diff --git a/lib/backtest/metrics.ts b/lib/backtest/metrics.ts
+index 236305c..e0c0f80 100644
+--- a/lib/backtest/metrics.ts
++++ b/lib/backtest/metrics.ts
+@@ -10,6 +10,7 @@ export interface Metrics {
+   avg_gross_spread_bps: number
+   avg_net_spread_bps: number
+   phantom_alpha_pct: number
++  strategy_profitable_after_friction: boolean
+   max_drawdown_pct: number
+   total_net_pnl: number
+   total_gross_pnl: number
+@@ -94,7 +95,8 @@ export function computeMetrics(result: BacktestResult): Metrics {
+     return {
+       sharpe: 0, trade_count: 0, win_rate: 0,
+       avg_gross_spread_bps: 0, avg_net_spread_bps: 0,
+-      phantom_alpha_pct: 0, max_drawdown_pct: 0,
++      phantom_alpha_pct: 0, strategy_profitable_after_friction: false,
++      max_drawdown_pct: 0,
+       total_net_pnl: 0, total_gross_pnl: 0,
+       final_equity: equity.length ? equity[equity.length - 1].friction : config.starting_capital,
+       strategy_uptime_pct: 100,
+@@ -105,7 +107,16 @@ export function computeMetrics(result: BacktestResult): Metrics {
+   const win_rate = 100 * (trades.filter(t => t.profitable_after_friction).length / trade_count)
+   const avg_gross = trades.reduce((a, t) => a + t.gross_spread_bps, 0) / trade_count
+   const avg_net = trades.reduce((a, t) => a + t.net_spread_bps, 0) / trade_count
+-  const phantom = avg_gross !== 0 ? 100 * (1 - avg_net / avg_gross) : 0
++  // "Phantom alpha eliminated" = the share of the naive (zero-friction) edge
++  // that friction ate. Clipped to [0, 100]: once net spread goes negative,
++  // friction has eaten MORE than 100% of the naive edge (i.e. the naive
++  // backtest was entirely fictional) — report that as strategy_profitable
++  // = false rather than letting the ratio run away to 1000%+, which stops
++  // being a meaningful percentage once the denominator/numerator relationship
++  // inverts.
++  const phantom_raw = avg_gross > 0 ? 100 * (1 - avg_net / avg_gross) : 0
++  const phantom = Math.max(0, Math.min(100, phantom_raw))
++  const strategy_profitable_after_friction = avg_net > 0
+   const mdd = 100 * maxDrawdown(equity)
+   const total_net = trades.reduce((a, t) => a + t.net_pnl, 0)
+   const total_gross = trades.reduce((a, t) => a + t.gross_pnl, 0)
+@@ -125,6 +136,7 @@ export function computeMetrics(result: BacktestResult): Metrics {
+     avg_gross_spread_bps: avg_gross,
+     avg_net_spread_bps: avg_net,
+     phantom_alpha_pct: phantom,
++    strategy_profitable_after_friction,
+     max_drawdown_pct: mdd,
+     total_net_pnl: total_net,
+     total_gross_pnl: total_gross,

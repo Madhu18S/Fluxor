@@ -10,6 +10,7 @@ export interface Metrics {
   avg_gross_spread_bps: number
   avg_net_spread_bps: number
   phantom_alpha_pct: number
+  strategy_profitable_after_friction: boolean
   max_drawdown_pct: number
   total_net_pnl: number
   total_gross_pnl: number
@@ -94,7 +95,8 @@ export function computeMetrics(result: BacktestResult): Metrics {
     return {
       sharpe: 0, trade_count: 0, win_rate: 0,
       avg_gross_spread_bps: 0, avg_net_spread_bps: 0,
-      phantom_alpha_pct: 0, max_drawdown_pct: 0,
+      phantom_alpha_pct: 0, strategy_profitable_after_friction: false,
+      max_drawdown_pct: 0,
       total_net_pnl: 0, total_gross_pnl: 0,
       final_equity: equity.length ? equity[equity.length - 1].friction : config.starting_capital,
       strategy_uptime_pct: 100,
@@ -105,7 +107,16 @@ export function computeMetrics(result: BacktestResult): Metrics {
   const win_rate = 100 * (trades.filter(t => t.profitable_after_friction).length / trade_count)
   const avg_gross = trades.reduce((a, t) => a + t.gross_spread_bps, 0) / trade_count
   const avg_net = trades.reduce((a, t) => a + t.net_spread_bps, 0) / trade_count
-  const phantom = avg_gross !== 0 ? 100 * (1 - avg_net / avg_gross) : 0
+  // "Phantom alpha eliminated" = the share of the naive (zero-friction) edge
+  // that friction ate. Clipped to [0, 100]: once net spread goes negative,
+  // friction has eaten MORE than 100% of the naive edge (i.e. the naive
+  // backtest was entirely fictional) — report that as strategy_profitable
+  // = false rather than letting the ratio run away to 1000%+, which stops
+  // being a meaningful percentage once the denominator/numerator relationship
+  // inverts.
+  const phantom_raw = avg_gross > 0 ? 100 * (1 - avg_net / avg_gross) : 0
+  const phantom = Math.max(0, Math.min(100, phantom_raw))
+  const strategy_profitable_after_friction = avg_net > 0
   const mdd = 100 * maxDrawdown(equity)
   const total_net = trades.reduce((a, t) => a + t.net_pnl, 0)
   const total_gross = trades.reduce((a, t) => a + t.gross_pnl, 0)
@@ -125,6 +136,7 @@ export function computeMetrics(result: BacktestResult): Metrics {
     avg_gross_spread_bps: avg_gross,
     avg_net_spread_bps: avg_net,
     phantom_alpha_pct: phantom,
+    strategy_profitable_after_friction,
     max_drawdown_pct: mdd,
     total_net_pnl: total_net,
     total_gross_pnl: total_gross,
