@@ -1,0 +1,13 @@
+{
+  "task_id": "lookahead_028",
+  "bug_type": "lookahead_basis",
+  "variant": "a_only",
+  "lookahead_bars": 8,
+  "target_file": "lib/backtest/engine.ts",
+  "function": "runBacktest",
+  "clean_line": "basis[i] = ((bars[i].price_b - bars[i].price_a) / bars[i].price_a) * 1e4",
+  "mutated_line": "const j = Math.min(i + 8, bars.length - 1)\n    basis[i] = ((bars[i].price_b - bars[j].price_a) / bars[j].price_a) * 1e4",
+  "tests_pass": true,
+  "oracle_detects_leak": true,
+  "valid": true
+}
