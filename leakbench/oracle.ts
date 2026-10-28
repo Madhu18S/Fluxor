@@ -1,6 +1,5 @@
 // LeakBench metamorphic oracle for Fluxor.
 // Invariant: changing bars AFTER cutoff k must not change anything observable at or before k.
-// Adjust the import path and the two TODO accessors to match Fluxor's real types.
 import { runBacktest } from "../lib/backtest/engine";
 import { defaultConfig } from "../lib/backtest/config";
 
@@ -28,13 +27,9 @@ export function perturbFuture(bars: Bar[], k: number, seed = 1): Bar[] {
   return out;
 }
 
-// TODO: confirm equity is aligned 1:1 with bars. If it is an array of {ts, equity}, map to numbers here.
 // EquityPoint = { ts, naive, friction }. Compare both curves.
 const equityAt = (r: any): number[][] => [r.equity.map((e: any) => e.naive), r.equity.map((e: any) => e.friction)];
-// TODO: confirm trade field names. Only trades fully closed by cutoff are compared.
-// If exit_time is a bar INDEX rather than a ts, the clean run below will print true; then compare against k instead of kTs.
 const closedBy = (r: any, kTs: number) => r.trades.filter((t: any) => t.exit_time <= kTs);
-
 const entriesBy = (r: any, kTs: number) =>
   r.trades
     .filter((t: any) => t.entry_time <= kTs)
@@ -68,7 +63,7 @@ export function metamorphicCheck(
   return { ok: true };
 }
 
-// Run across several cutoffs and seeds; a leak is flagged if ANY check fails.
+// A leak is flagged if ANY check fails.
 export function hasLeak(bars: Bar[], config: any, latency_ms?: number): boolean {
   const n = bars.length;
   // A lookahead only shows when the cutoff lands on a decision bar (an entry or exit).
@@ -101,7 +96,6 @@ if (require.main === module) {
   const config: any = defaultConfig();
   const r: any = runBacktest(bars, config);
   console.log("trades:", r.trades.length, "| first equity pt:", JSON.stringify(r.equity[0]), "| last:", JSON.stringify(r.equity[r.equity.length - 1]));
-  console.log("first trade exit_time:", r.trades[0]?.exit_time, "| bars[10].ts:", bars[10].ts);
   console.log("check at 50%:", JSON.stringify(metamorphicCheck(bars, config, Math.floor(n * 0.5))));
   console.log("leak (expect false when clean, true when bug planted):", hasLeak(bars, config));
 }
