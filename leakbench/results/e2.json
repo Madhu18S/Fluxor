@@ -1,0 +1,95 @@
+[
+  {
+    "id": "clean_engine",
+    "kind": "no change",
+    "assumption": "ok",
+    "smoke_pass": true,
+    "cases": 24,
+    "informative": 24,
+    "flagged": 0,
+    "flagged_cases": []
+  },
+  {
+    "id": "B1_basis_formula_rewrite",
+    "kind": "equivalent rewrite",
+    "assumption": "ok",
+    "smoke_pass": true,
+    "cases": 8,
+    "informative": 8,
+    "flagged": 0,
+    "flagged_cases": []
+  },
+  {
+    "id": "B2_entry_condition_rewrite",
+    "kind": "equivalent rewrite",
+    "assumption": "ok",
+    "smoke_pass": true,
+    "cases": 8,
+    "informative": 8,
+    "flagged": 0,
+    "flagged_cases": []
+  },
+  {
+    "id": "B3_entry_threshold_x1.5",
+    "kind": "causal behavior change",
+    "assumption": "ok",
+    "smoke_pass": true,
+    "cases": 8,
+    "informative": 8,
+    "flagged": 0,
+    "flagged_cases": []
+  },
+  {
+    "id": "B4_max_hold_minus10",
+    "kind": "causal behavior change",
+    "assumption": "ok",
+    "smoke_pass": true,
+    "cases": 8,
+    "informative": 8,
+    "flagged": 0,
+    "flagged_cases": []
+  },
+  {
+    "id": "B5_exit_threshold_x0.5",
+    "kind": "causal behavior change",
+    "assumption": "ok",
+    "smoke_pass": true,
+    "cases": 8,
+    "informative": 8,
+    "flagged": 0,
+    "flagged_cases": []
+  },
+  {
+    "id": "B6_past_only_entry_filter",
+    "kind": "causal behavior change",
+    "assumption": "ok",
+    "smoke_pass": true,
+    "cases": 8,
+    "informative": 8,
+    "flagged": 0,
+    "flagged_cases": []
+  },
+  {
+    "id": "B7_max_hold_plus10",
+    "kind": "causal behavior change",
+    "assumption": "violates",
+    "smoke_pass": true,
+    "cases": 8,
+    "informative": 8,
+    "flagged": 2,
+    "flagged_cases": [
+      {
+        "data": "rw",
+        "cfg": "default",
+        "n_trades": 100,
+        "leak": true
+      },
+      {
+        "data": "rw",
+        "cfg": "entry_x1.5",
+        "n_trades": 82,
+        "leak": true
+      }
+    ]
+  }
+]

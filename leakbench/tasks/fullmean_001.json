@@ -1,0 +1,14 @@
+{
+  "task_id": "fullmean_001",
+  "family": "B",
+  "bug_type": "global_statistic_leak",
+  "variant": "full_sample_mean",
+  "lookahead_bars": null,
+  "target_file": "lib/backtest/engine.ts",
+  "function": "runBacktest",
+  "clean_line": "const mean_basis = rollingMean(basis, i, s.basis_window_min)",
+  "mutated_line": "const mean_basis = isNaN(rollingMean(basis, i, s.basis_window_min)) ? NaN : basis.reduce((a, b) => a + b, 0) / n",
+  "tests_pass": true,
+  "oracle_detects_leak": true,
+  "valid": true
+}

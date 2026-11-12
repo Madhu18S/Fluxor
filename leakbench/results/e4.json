@@ -1,0 +1,146 @@
+[
+  {
+    "task": "lookahead_001",
+    "patch": "P0_true_fix",
+    "tests_pass": true,
+    "oracle_leak": false,
+    "n_trades": 27,
+    "same_as_clean": true
+  },
+  {
+    "task": "lookahead_001",
+    "patch": "P1_no_change",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 27,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_001",
+    "patch": "P2_fix_price_a_only",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 29,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_001",
+    "patch": "P3_dampen_signal",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 50,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_001",
+    "patch": "P4_blend_with_current",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 28,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_001",
+    "patch": "P5_disable_strategy",
+    "tests_pass": false,
+    "oracle_leak": false,
+    "n_trades": 0,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_003",
+    "patch": "P0_true_fix",
+    "tests_pass": true,
+    "oracle_leak": false,
+    "n_trades": 27,
+    "same_as_clean": true
+  },
+  {
+    "task": "lookahead_003",
+    "patch": "P1_no_change",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 27,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_003",
+    "patch": "P2_fix_price_a_only",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 29,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_003",
+    "patch": "P3_dampen_signal",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 50,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_003",
+    "patch": "P4_blend_with_current",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 30,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_003",
+    "patch": "P5_disable_strategy",
+    "tests_pass": false,
+    "oracle_leak": false,
+    "n_trades": 0,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_005",
+    "patch": "P0_true_fix",
+    "tests_pass": true,
+    "oracle_leak": false,
+    "n_trades": 27,
+    "same_as_clean": true
+  },
+  {
+    "task": "lookahead_005",
+    "patch": "P1_no_change",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 27,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_005",
+    "patch": "P2_fix_price_a_only",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 30,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_005",
+    "patch": "P3_dampen_signal",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 50,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_005",
+    "patch": "P4_blend_with_current",
+    "tests_pass": true,
+    "oracle_leak": true,
+    "n_trades": 28,
+    "same_as_clean": false
+  },
+  {
+    "task": "lookahead_005",
+    "patch": "P5_disable_strategy",
+    "tests_pass": false,
+    "oracle_leak": false,
+    "n_trades": 0,
+    "same_as_clean": false
+  }
+]

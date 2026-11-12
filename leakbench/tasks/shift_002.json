@@ -1,0 +1,14 @@
+{
+  "task_id": "shift_002",
+  "family": "B",
+  "bug_type": "rolling_window_shift",
+  "variant": "shift",
+  "lookahead_bars": 2,
+  "target_file": "lib/backtest/engine.ts",
+  "function": "runBacktest",
+  "clean_line": "const mean_basis = rollingMean(basis, i, s.basis_window_min)",
+  "mutated_line": "const _w = s.basis_window_min\n    const _lo = Math.max(0, i - _w + 1 + 2)\n    const _hi = Math.min(n - 1, i + 2)\n    let _sum = 0\n    for (let q = _lo; q <= _hi; q++) _sum += basis[q]\n    const mean_basis = isNaN(rollingMean(basis, i, _w)) ? NaN : _sum / (_hi - _lo + 1)",
+  "tests_pass": true,
+  "oracle_detects_leak": true,
+  "valid": true
+}
