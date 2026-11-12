@@ -5,7 +5,7 @@ non-interference oracle and the scripts behind the paper's three experiments (E1
 Every mutant passes a functional smoke suite; the oracle checks that changing bars after a cutoff
 does not change anything observable at or before it.
 
-Paper: [Kaggle writeup link]  |  Commit: [git rev-parse --short HEAD]  |  Node: [node -v]
+Paper: kaggle.com/competitions/gemma-4-developer-agent-paper/writeups/new-writeup-1794499942838  |  Commit: [git rev-parse --short HEAD]  |  Node: [node -v]
 
 ## Files
 | Path | What it is |
@@ -44,4 +44,4 @@ If a run is interrupted, run `git checkout lib/backtest/engine.ts`.
 - "Functional tests" means `smoke_test.ts`, not a full unit-test suite.
 
 ## License
-[Add a license, or state "all rights reserved".]
+all rights reserved.
